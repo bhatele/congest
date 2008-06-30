@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 /** \file latency_old.c
  *  Author: Abhinav S Bhatele
  *  Date Created: May 11th, 2008
@@ -8,7 +15,6 @@
  *  for the ping-pong for each pair is stored as a function of the 
  *  message size.
  */
-
 
 #include <mpi.h>
 #include <stdio.h>

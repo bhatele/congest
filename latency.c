@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 /** \file latency.c
  *  Author: Abhinav S Bhatele
  *  Date Created: May 11th, 2008
@@ -8,7 +15,6 @@
  *  for the ping-pong for each pair is stored as a function of the 
  *  message size.
  */
-
 
 #include <mpi.h>
 #include <stdio.h>
@@ -34,8 +40,8 @@ int main(int argc, char *argv[]) {
   int msg_size, num_msgs;
   int i=0, j=0;
   char name1[30], name2[30];
-  sprintf(name1, "bgp_COmode_latency_%d.dat", numprocs);
-  sprintf(name2, "bgp_COmode_latMAM_%d.dat", numprocs);
+  sprintf(name1, "bgp_latency_%d.dat", numprocs);
+  sprintf(name2, "bgp_latMAM_%d.dat", numprocs);
 
   char *send_buf = (char *)memalign(64 * 1024, MAX_MSG_SIZE);
   char *recv_buf = (char *)memalign(64 * 1024, MAX_MSG_SIZE);
@@ -54,10 +60,8 @@ int main(int argc, char *argv[]) {
       for(i=0; i<numprocs; i++) {
 	if(i != UNIQ_PE) {
 	  // warm up
-	  // for(j=0; j<10; j++) {
-	    MPI_Send(send_buf, msg_size, MPI_CHAR, i, 1, MPI_COMM_WORLD);
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	  // }
+	  MPI_Send(send_buf, msg_size, MPI_CHAR, i, 1, MPI_COMM_WORLD);
+	  MPI_Recv(recv_buf, msg_size, MPI_CHAR, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
 	  sendTime = MPI_Wtime();
 	  for(j=0; j<num_msgs; j++) {
@@ -71,10 +75,8 @@ int main(int argc, char *argv[]) {
     }
     else {
       // warm up
-      // for(j=0; j<10; j++) {
-	MPI_Recv(recv_buf, msg_size, MPI_CHAR, UNIQ_PE, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	MPI_Send(send_buf, msg_size, MPI_CHAR, UNIQ_PE, 1, MPI_COMM_WORLD);
-      // }
+      MPI_Recv(recv_buf, msg_size, MPI_CHAR, UNIQ_PE, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Send(send_buf, msg_size, MPI_CHAR, UNIQ_PE, 1, MPI_COMM_WORLD);
 
       for(i=0; i<num_msgs; i++) {
 	MPI_Recv(recv_buf, msg_size, MPI_CHAR, UNIQ_PE, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
