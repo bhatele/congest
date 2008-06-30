@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 /** \file contention.c 
  *  Author: Abhinav S Bhatele
  *  Date Created: May 11th, 2008
@@ -10,7 +17,6 @@
  *  every trial. These latencies for different message sizes are
  *  compared to the latencies for messages sent to the nearest neighbor
  */
-
 
 #include <mpi.h>
 #include <stdio.h>
@@ -33,8 +39,9 @@ int myrand(int numpes) {
   return((unsigned)(next/65536) % numpes);
 }
 
-/* creating a random map code taken from Matt Reilly's benchmark
- *
+/* Creating a random map 
+ * Code taken from Matt Reilly's benchmark:
+ * http://www.bigncomputing.org/Big_N_Computing/Big_N_Computing/Entries/2008/4/14_High_Processor_Count_Computing.html
  */
 static int random_ready = 0; 
 void init_random()
@@ -83,8 +90,7 @@ void build_random_map(int init, int size, int * map)
   }
   
   if(init) {
-    // build an initial map that maps all entries K
-    // to K + (K mod 2)
+    // build an initial map that maps all entries K to K + (K mod 2)
     for(i = 0; i < size; i++) {
       map[i] = i ^ 1; 
     }
@@ -105,7 +111,6 @@ void build_random_map(int init, int size, int * map)
       // map[p] = i
       // map[k] = q
       // map[q] = k
-      //
       p = map[i];
       q = map[k];
 
