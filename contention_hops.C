@@ -7,8 +7,8 @@
 
 /** \file contention.c 
  *  Author: Abhinav S Bhatele
- *  Date Created: May 11th, 2008
- *  E-mail: bhatele2@uiuc.edu
+ *  Date Created: October 23rd, 2008
+ *  E-mail: bhatele@illinois.edu
  *
  *  This benchmark captures the effect of distance on the message
  *  latencies in the presence of contention. Every processor sends
@@ -136,14 +136,26 @@ int main(int argc, char *argv[]) {
 
   // allocate the routing map.
   int *map = (int *) malloc(sizeof(int) * numprocs);
-  TopoManager tmgr;
-  int dimNZ = tmgr.getDimNZ();
-  int maxHops = dimNZ/2;
+  TopoManager *tmgr;
+  int sendNZ, dimNZ, bcastNZ[1];
 
-  if (myrank == 0)
-    printf("Torus Dimensions %d %d %d %d hops %d\n", tmgr.getDimNX(), tmgr.getDimNY(), dimNZ, tmgr.getDimNT(), maxHops);
+  if(myrank == 0) {
+    tmgr = new TopoManager();
+    sendNZ = tmgr->getDimNZ();
+    bcastNZ[0] = sendNZ;
+  }
+  
+  // Broadcast dimNZ
+  MPI_Bcast(bcastNZ, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  dimNZ = bcastNZ[0];
 
-  for (hops=6; hops <= maxHops; hops++) {
+  int maxHops = dimNZ;
+  
+  if (myrank == 0) {
+    printf("Torus Dimensions %d %d %d %d hops %d\n", tmgr->getDimNX(), tmgr->getDimNY(), dimNZ, tmgr->getDimNT(), maxHops);
+  }
+
+  for (hops=1; hops <= maxHops; hops++) {
 
     sprintf(name, "bgp_hops_%d_%d.dat", numprocs, hops);
     // Rank 0 makes up a routing map.
