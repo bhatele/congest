@@ -8,7 +8,7 @@
 /** \file contention.c 
  *  Author: Abhinav S Bhatele
  *  Date Created: May 11th, 2008
- *  E-mail: bhatele2@uiuc.edu
+ *  E-mail: bhatele@illinois.edu
  *
  *  This benchmark captures the effect of distance on the message
  *  latencies in the presence of contention. Every processor sends

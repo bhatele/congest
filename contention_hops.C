@@ -5,17 +5,16 @@
  * $Revision$
  *****************************************************************************/
 
-/** \file contention.c 
+/** \file contention_hops.C
  *  Author: Abhinav S Bhatele
  *  Date Created: October 23rd, 2008
  *  E-mail: bhatele@illinois.edu
  *
  *  This benchmark captures the effect of distance on the message
- *  latencies in the presence of contention. Every processor sends
- *  a message to some other random processor. The number of messages
- *  being sent can be varied and the random processor is changed in
- *  every trial. These latencies for different message sizes are
- *  compared to the latencies for messages sent to the nearest neighbor
+ *  latencies in the presence of contention. Controlled congestion is
+ *  introduced by fixing the number of hops each message travels. Message
+ *  latencies are plotted for different message sizes as the number of
+ *  hops every message travels increases.
  */
 
 #include <mpi.h>

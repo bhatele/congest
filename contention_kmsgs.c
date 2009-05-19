@@ -8,14 +8,10 @@
 /** \file contention_kmsgs.c 
  *  Author: Abhinav S Bhatele
  *  Date Created: May 11th, 2008
- *  E-mail: bhatele2@uiuc.edu
+ *  E-mail: bhatele@illinois.edu
  *
- *  This benchmark captures the effect of distance on the message
- *  latencies in the presence of contention. Every processor sends
- *  a message to some other random processor. The number of messages
- *  being sent can be varied and the random processor is changed in
- *  every trial. These latencies for different message sizes are
- *  compared to the latencies for messages sent to the nearest neighbor
+ *  This benchmark tries to capture the effect of increasing communication
+ *  volume on message latencies for near-neighbor and random neighbor messages.
  */
 
 #include <mpi.h>
