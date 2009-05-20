@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <malloc.h>
 #include "TopoManager.h"
 
 // Minimum message size (bytes)
@@ -44,10 +43,19 @@ void dump_map(int size, int * map)
   fflush(stdout); 
 }
 
+void check_map(int size, int *map) {
+  int i;
+  for(i = 0; i < size; i++) {
+    if(map[i] != -1)
+      if(i != map[map[i]]) {
+	printf("map[%d]=%d map[%d]=%d\n", i, map[map[i]]);
+	abort();
+      }
+  }
+}
+
 void build_process_map(int size, int *map, int dist, int numRG, int *mapRG)
 {
-  // mode: 0, contention on a line
-  // mode: 1, contention between hollow bricks 
   TopoManager tmgr;
   int pe1, pe2, x, y, z, t;
   int dimNX, dimNY, dimNZ, dimNT;
@@ -61,35 +69,45 @@ void build_process_map(int size, int *map, int dist, int numRG, int *mapRG)
   int count = 0;
 
 #if CREATE_JOBS
+  for(int i=0; i<size; i++)
+    map[i] = -1;
+
   // assumes a cubic partition such as 8 x 8 x 8
+  // inner brick is always used
   for(int i=0; i<dimNX; i++)
-    for(int j=0; j<dimNY; j++)
-      for(int k=0; k<dimNZ; k++)
+    for(int j=1; j<dimNY-1; j++)
+      for(int k=1; k<dimNZ-1; k++)
 	for(int l=0; l<dimNT; l++) {
-	  pe1 = tmgr.coordinatesToRank(i, j, k, l);
-          if(k == 0 || k == dimNZ-1) {
-            // outer brick
-            if(hops == 1) {
-              if(j == 0 && k == 0)
-                pe2 = tmgr.coordinatesToRank(i, dimNY-1, dimNZ-1, l);
-              else if(j == dimNY-1 && k == dimNZ-1)
-                pe2 = tmgr.coordinatesToRank(i, 0, 0, l);
-              else
-                pe2 = tmgr.coordinatesToRank(i, k, j, l);
-              map[pe1] = pe2;
-            } else
-              map[pe1] = -1;
-          } else if(k == 1 || k == dimNZ-2) {
-            // inner brick
+          if(k == 1 || k == dimNZ-2) {
+	    pe1 = tmgr.coordinatesToRank(i, j, k, l);
             if(k == 1)
               pe2 = tmgr.coordinatesToRank(i, j, dimNZ-2, l);
             else
               pe2 = tmgr.coordinatesToRank(i, j, 1, l);
 	    map[pe1] = pe2;
             mapRG[count++] = pe1;
-          } else
-            map[pe1] = -1;
-        }
+	    printf("%d ", pe1);
+	  }
+	}
+
+  printf("\n");
+  if(dist == 1) {
+    // outer brick is used only when dist == 1
+    for(int i=0; i<dimNX; i++)
+      for(int j=0; j<dimNY; j++)
+	for(int k=0; k<dimNZ; k++)
+	  for(int l=0; l<dimNT; l++) {
+	    if(j == 0 || j == dimNY-1 || k == 0 || k == dimNZ-1) {
+	      pe1 = tmgr.coordinatesToRank(i, j, k, l);
+	      pe2 = tmgr.coordinatesToRank(i, k, j, l);
+	      if(j == 0 && k == 0)
+		pe2 = tmgr.coordinatesToRank(i, dimNY-1, dimNZ-1, l);
+	      else if(j == dimNY-1 && k == dimNZ-1)
+		pe2 = tmgr.coordinatesToRank(i, 0, 0, l);
+	      map[pe1] = pe2;
+	    }
+	  }
+  }
 #else
   for(int i=0; i<dimNX; i++)
     for(int j=0; j<dimNY; j++)
@@ -104,13 +122,13 @@ void build_process_map(int size, int *map, int dist, int numRG, int *mapRG)
 	  } else
 	    map[pe1] = -1;
 	}
-  printf("Barrier processors %d %d\n", numRG, count);
 #endif
-  dump_map(size, map);
+  printf("Barrier Process %d %d\n", count, numRG);
+  check_map(size, map);
 }
 
 int main(int argc, char *argv[]) {
-  int numprocs, myrank;
+  int numprocs, myrank, grank;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
@@ -128,8 +146,8 @@ int main(int argc, char *argv[]) {
   int i=0, pe, trial, hops;
   char name[30];
 
-  char *send_buf = (char *)memalign(64 * 1024, MAX_MSG_SIZE);
-  char *recv_buf = (char *)memalign(64 * 1024, MAX_MSG_SIZE);
+  char *send_buf = (char *)malloc(MAX_MSG_SIZE);
+  char *recv_buf = (char *)malloc(MAX_MSG_SIZE);
 
   for(i = 0; i < MAX_MSG_SIZE; i++) {
     recv_buf[i] = send_buf[i] = (char) (i & 0xff);
@@ -142,7 +160,11 @@ int main(int argc, char *argv[]) {
 
   if(myrank == 0) {
     tmgr = new TopoManager();
+#if CREATE_JOBS
+    numRG = tmgr->getDimNX() * (tmgr->getDimNY() - 2) * 2 * tmgr->getDimNT();
+#else
     numRG = tmgr->getDimNX() * tmgr->getDimNY() * 2 * tmgr->getDimNT();
+#endif
     dimNZ = tmgr->getDimNZ();
     for (int i=1; i<numprocs; i++) {
       bcastSend[0] = dimNZ;
@@ -180,27 +202,22 @@ int main(int argc, char *argv[]) {
     MPI_Bcast(map, numprocs, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(mapRG, numRG, MPI_INT, 0, MPI_COMM_WORLD);
 
-    if(z == 0 || z == dimNZ-1) {
-      MPI_Group_incl(orig_group, numRG, mapRG, &new_group);
-      MPI_Comm_create(MPI_COMM_WORLD, new_group, &new_comm);
-    }
+    MPI_Group_incl(orig_group, numRG, mapRG, &new_group);
+    MPI_Comm_create(MPI_COMM_WORLD, new_group, &new_comm);
+    MPI_Group_rank(new_group, &grank);
     
 #if CREATE_JOBS
     sprintf(name, "xt3_job_%d_%d.dat", numprocs, hops);
 #else
     sprintf(name, "xt3_line_%d_%d.dat", numprocs, hops);
 #endif
-    
+   
     for (msg_size=MIN_MSG_SIZE; msg_size<=MAX_MSG_SIZE; msg_size=(msg_size<<1)) {
       for (trial=0; trial<10; trial++) {
 
 	pe = map[myrank];
 	if(pe != -1) {
-#if CREATE_JOBS
-          if(z == 1 || z == dimNZ-2) MPI_Barrier(new_comm);
-#else
-          //if(z == 0 || z == dimNZ-1) MPI_Barrier(new_comm);
-#endif
+          if(grank != MPI_UNDEFINED) MPI_Barrier(new_comm);
 
 	  if(myrank < pe) {
 	    // warmup
@@ -222,11 +239,7 @@ int main(int argc, char *argv[]) {
 	      MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
 	    }
 
-#if CREATE_JOBS
-            if(z == 1 || z == dimNZ-2) MPI_Barrier(new_comm);
-#else
-            //if(z == 0 || z == dimNZ-1) MPI_Barrier(new_comm);
-#endif
+	    if(grank != MPI_UNDEFINED) MPI_Barrier(new_comm);
 	  } else {
 	    // warmup
 	    for(i=0; i<2; i++) {
@@ -247,44 +260,36 @@ int main(int argc, char *argv[]) {
 	      MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
 	    }
 
-#if CREATE_JOBS
-            if(z == 1 || z == dimNZ-2) MPI_Barrier(new_comm);
-#else
-            //if(z == 0 || z == dimNZ-1) MPI_Barrier(new_comm);
-#endif
+	    if(grank != MPI_UNDEFINED) MPI_Barrier(new_comm);
 	  }
 
-#if CREATE_JOBS
-          if(z == 1 || z == (dimNZ-2)) {
-#else
-          if(z == 0 || z == (dimNZ-1)) {
-#endif
+	  if(grank != MPI_UNDEFINED) {
   	    MPI_Allreduce(&recvTime, &min, 1, MPI_DOUBLE, MPI_MIN, new_comm);
   	    MPI_Allreduce(&recvTime, &avg, 1, MPI_DOUBLE, MPI_SUM, new_comm);
 	    MPI_Allreduce(&recvTime, &max, 1, MPI_DOUBLE, MPI_MAX, new_comm);
           }
 
-	  avg /= numprocs;
+	  avg /= numRG;
 
-	  if(myrank == 0) {
-	    time[0] += min;
-	    time[1] += avg;
-	    time[2] += max;
-	  }
+	} // end if map[pe] != -1
+	if(grank == 0) {
+	  time[0] += min;
+	  time[1] += avg;
+	  time[2] += max;
 	}
-      }
-      if (myrank == 0) {
+      } // end for loop of trials
+      if (grank == 0) {
 	FILE *outf = fopen(name, "a");
 	fprintf(outf, "%d %g %g %g\n", msg_size, time[0]/10, time[1]/10, time[2]/10);
 	fflush(NULL);
 	fclose(outf);
 	time[0] = time[1] = time[2] = 0.0;
       }
-    }
+    } // end for loop of msgs
     free(mapRG);
-  }
+  } // end for loop of hops
 
-  if(myrank == 0)
+  if(grank == 0)
     printf("Program Complete\n");
 
   MPI_Finalize();
