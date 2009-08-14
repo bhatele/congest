@@ -50,17 +50,18 @@ void build_process_map(int size, int *map, int away)
 {
   TopoManager tmgr;
   int x, y, z, t, z1;
-  int dimNX, dimNY, dimNZ;
+  int dimNX, dimNY, dimNZ, dimNT;
 
   dimNX = tmgr.getDimNX();
   dimNY = tmgr.getDimNY();
   dimNZ = tmgr.getDimNZ();
+  dimNT = tmgr.getDimNT();
 
   if (away%2 == 1) {
     // no. of hops is even
     for(int i=0; i<size; i++) {
       tmgr.rankToCoordinates(i, x, y, z, t);      
-      if (t < 2) {
+      if (t < dimNT/2) {
 	if (z%2 == 0)
 	  z1 = wrap_z(z + away);
 	else
@@ -78,7 +79,7 @@ void build_process_map(int size, int *map, int away)
     // no. of hops is odd
     for(int i=0; i<size; i++) {
       tmgr.rankToCoordinates(i, x, y, z, t);      
-      if (t < 2) {
+      if (t < dimNT/2) {
 	if (z%(2*away) < away)
 	  z1 = z + away;
 	else
@@ -96,7 +97,7 @@ void build_process_map(int size, int *map, int away)
   if (away == 6) {
     for(int i=0; i<size; i++) {
       tmgr.rankToCoordinates(i, x, y, z, t);      
-      if(t < 2) {
+      if(t < dimNT/2) {
 	if( ((int)(z/2)) % 2 == 0)
 	  z1 = wrap_z(z + away);
 	else
