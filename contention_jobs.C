@@ -65,7 +65,6 @@ void build_process_map(int size, int *map, int dist, int numRG, int *mapRG)
   dimNZ = tmgr.getDimNZ();
   dimNT = tmgr.getDimNT();
 
-  int hops = dimNZ - (dist + 1)*2;
   int count = 0;
 
 #if CREATE_JOBS
@@ -78,12 +77,12 @@ void build_process_map(int size, int *map, int dist, int numRG, int *mapRG)
     for(int j=1; j<dimNY-1; j++)
       for(int k=1; k<dimNZ-1; k++)
 	for(int l=0; l<dimNT; l++) {
-          if(k == 1 || k == dimNZ-2) {
+          if(k == 2 || k == dimNZ-3) {
 	    pe1 = tmgr.coordinatesToRank(i, j, k, l);
-            if(k == 1)
-              pe2 = tmgr.coordinatesToRank(i, j, dimNZ-2, l);
+            if(k == 2)
+              pe2 = tmgr.coordinatesToRank(i, j, dimNZ-3, l);
             else
-              pe2 = tmgr.coordinatesToRank(i, j, 1, l);
+              pe2 = tmgr.coordinatesToRank(i, j, 2, l);
 	    map[pe1] = pe2;
             mapRG[count++] = pe1;
 	    printf("%d ", pe1);
@@ -114,11 +113,16 @@ void build_process_map(int size, int *map, int dist, int numRG, int *mapRG)
       for(int k=0; k<dimNZ; k++)
 	for(int l=0; l<dimNT; l++) {
 	  pe1 = tmgr.coordinatesToRank(i, j, k, l);
-	  if(abs(dimNZ - 1 - 2*k) > hops) {
+	  if( abs(dimNZ - 1 - 2*k) <= (2*dist+1) ) {
 	    pe2 = tmgr.coordinatesToRank(i, j, (dimNZ-1-k), l);
 	    map[pe1] = pe2;
-            if(k == 0 || k == dimNZ-1)
-              mapRG[count++] = pe1;
+
+	    if(i==0 && j==0 && l==0) {
+	      printf("Hops %d [%d] [%d]\n", 2*dist+1, pe1, pe2);
+	    }
+
+	    if(k == dimNZ/2-1 || k == dimNZ/2)
+	      mapRG[count++] = pe1;
 	  } else
 	    map[pe1] = -1;
 	}
@@ -207,9 +211,9 @@ int main(int argc, char *argv[]) {
     MPI_Group_rank(new_group, &grank);
     
 #if CREATE_JOBS
-    sprintf(name, "xt3_job_%d_%d.dat", numprocs, hops);
+    sprintf(name, "bgp_job_%d_%d.dat", numprocs, hops);
 #else
-    sprintf(name, "xt3_line_%d_%d.dat", numprocs, hops);
+    sprintf(name, "bgp_line_%d_%d.dat", numprocs, hops);
 #endif
    
     for (msg_size=MIN_MSG_SIZE; msg_size<=MAX_MSG_SIZE; msg_size=(msg_size<<1)) {
