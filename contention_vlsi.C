@@ -46,8 +46,11 @@ void dump_map(int size, int * map)
   fflush(stdout); 
 }
 
-void build_process_map(int size, int *map, int away)
+void build_process_map(int size, int *map, int mode)
 {
+  /** if mode == 1, most ranks send 1 hop away
+   *  if mode == 2, everyone sends 2 hops away
+   */
   TopoManager tmgr;
   int x, y, z, t, z1;
   int dimNX, dimNY, dimNZ, dimNT;
@@ -57,60 +60,52 @@ void build_process_map(int size, int *map, int away)
   dimNZ = tmgr.getDimNZ();
   dimNT = tmgr.getDimNT();
 
-  if (away%2 == 1) {
-    // no. of hops is odd
+  if (mode == 1) {
+    // most ranks send 1 hop away
     for(int i=0; i<size; i++) {
-      tmgr.rankToCoordinates(i, x, y, z, t);      
+      tmgr.rankToCoordinates(i, x, y, z, t);
       if (t < dimNT/2) {
 	if (z%2 == 0)
-	  z1 = wrap_z(z + away);
+	  z1 = wrap_z(z + 1);
 	else
-	  z1 = wrap_z(z - away);
+	  z1 = wrap_z(z - 1);
       }
       else {
 	if (z%2 == 0)
-	  z1 = wrap_z(z - away);
+	  z1 = wrap_z(z - 1);
 	else
-	  z1 = wrap_z(z + away);
+	  z1 = wrap_z(z + 1);
       }
+
+      // for now this will only work on a 8 x 8 x 16 partition
+      // we do swap of some of the ranks
+      if(z == 0) z1 == 8;
+      if(z == 8) z1 == 0;
+      if(z==1  && t<dimNT/2) z1 == 15;
+      if(z==15 && t>dimNT/2) z1 == 1;
+      if(z==7  && t>dimNT/2) z1 == 9;
+      if(z==9  && t<dimNT/2) z1 == 7;
       map[i] = tmgr.coordinatesToRank(x, y, z1, t);
     }
   } else {
-    // no. of hops is even
+    // send 2 hops away
     for(int i=0; i<size; i++) {
-      tmgr.rankToCoordinates(i, x, y, z, t);      
+      tmgr.rankToCoordinates(i, x, y, z, t);
       if (t < dimNT/2) {
-	if (z%(2*away) < away)
-	  z1 = z + away;
+	if (z%4 < 2)
+	  z1 = z + 2;
 	else
-	  z1 = z - away;
+	  z1 = z - 2;
       } else {
-	if (z%(2*away) < away)
-	  z1 = wrap_z(z - away);
+	if (z%4 < 2)
+	  z1 = wrap_z(z - 2);
 	else
-	  z1 = wrap_z(z + away);
+	  z1 = wrap_z(z + 2);
       }
       map[i] = tmgr.coordinatesToRank(x, y, z1, t);
     }
   }
 
-  if (away == 6) {
-    for(int i=0; i<size; i++) {
-      tmgr.rankToCoordinates(i, x, y, z, t);      
-      if(t < dimNT/2) {
-	if( ((int)(z/2)) % 2 == 0)
-	  z1 = wrap_z(z + away);
-	else
-	  z1 = wrap_z(z - away);
-      } else {
-	if( ((int)(z/2)) % 2 == 0)
-	  z1 = wrap_z(z - away);
-	else
-	  z1 = wrap_z(z + away);
-      }
-      map[i] = tmgr.coordinatesToRank(x, y, z1, t);
-    } 
-  }
   // dump_map(size, map);
 }
 
@@ -120,8 +115,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
-  double sendTime, recvTime, min, avg, max;
-  double time[3] = {0.0, 0.0, 0.0};
+  double sendTime, recvTime, time = 0.0;
   int msg_size;
   MPI_Status mstat;
   int i=0, pe, trial, hops;
@@ -155,9 +149,8 @@ int main(int argc, char *argv[]) {
     printf("Torus Dimensions %d %d %d %d hops %d\n", tmgr->getDimNX(), tmgr->getDimNY(), dimNZ, tmgr->getDimNT(), maxHops);
   }
 
-  for (hops=1; hops <= maxHops; hops++) {
-
-    sprintf(name, "bgp_hops_%d_%d.dat", numprocs, hops);
+  for (hops=1; hops <= 2; hops++) {
+    sprintf(name, "bgp_mode_%d_%d.dat", numprocs, hops);
     // Rank 0 makes up a routing map.
     if (myrank == 0)
       build_process_map(numprocs, map, hops);
@@ -166,74 +159,39 @@ int main(int argc, char *argv[]) {
     MPI_Bcast(map, numprocs, MPI_INT, 0, MPI_COMM_WORLD);
 
     for (msg_size=MIN_MSG_SIZE; msg_size<=MAX_MSG_SIZE; msg_size=(msg_size<<1)) {
-      for (trial=0; trial<10; trial++) {
+      for (trial=0; trial<11; trial++) {
 
 	pe = map[myrank];
 
+	if(myrank == 0 && trial > 0) sendTime = MPI_Wtime();
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	if(myrank < pe) {
-	  // warmup
-	  for(i=0; i<2; i++) {
-	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
-	  }
-
-	  sendTime = MPI_Wtime();
 	  for(i=0; i<NUM_MSGS; i++)
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
 	  for(i=0; i<NUM_MSGS; i++)
 	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
-	  recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
-      
-	  // cooldown
-	  for(i=0; i<2; i++) {
-	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
-	  }
 
 	  MPI_Barrier(MPI_COMM_WORLD);
+	  if(myrank == 0 && trial > 0) recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
 	} else {
-	  // warmup
-	  for(i=0; i<2; i++) {
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
-	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	  }
-
-	  sendTime = MPI_Wtime();
 	  for(i=0; i<NUM_MSGS; i++)
 	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
 	  for(i=0; i<NUM_MSGS; i++)
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	  recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
-
-	  // cooldown
-	  for(i=0; i<2; i++) {
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
-	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	  }
 
 	  MPI_Barrier(MPI_COMM_WORLD);
 	}
 
-	MPI_Allreduce(&recvTime, &min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-	MPI_Allreduce(&recvTime, &avg, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Allreduce(&recvTime, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-	avg /= numprocs;
-
-	if(myrank == 0) {
-	  time[0] += min;
-	  time[1] += avg;
-	  time[2] += max;
-	}
+	if(myrank == 0 && trial > 0)
+	  time += recvTime;
       }
       if (myrank == 0) {
 	FILE *outf = fopen(name, "a");
-	fprintf(outf, "%d %g %g %g\n", msg_size, time[0]/10, time[1]/10, time[2]/10);
+	fprintf(outf, "%d %g\n", msg_size, time/10);
 	fflush(NULL);
 	fclose(outf);
-	time[0] = time[1] = time[2] = 0.0;
+	time = 0.0;
       }
     }
   }
