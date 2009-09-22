@@ -24,6 +24,13 @@
 #include <malloc.h>
 #include "TopoManager.h"
 
+#if USE_HPM
+extern "C" void HPM_Init(void);
+extern "C" void HPM_Start(char *);
+extern "C" void HPM_Stop(char *);
+extern "C" void HPM_Print(void);
+#endif
+
 // Minimum message size (bytes)
 #define MIN_MSG_SIZE 4
 
@@ -52,7 +59,7 @@ void build_process_map(int size, int *map, int mode)
    *  if mode == 2, everyone sends 2 hops away
    */
   TopoManager tmgr;
-  int x, y, z, t, z1;
+  int x, y, z, t, z1, t1 = 0;
   int dimNX, dimNY, dimNZ, dimNT;
 
   dimNX = tmgr.getDimNX();
@@ -60,7 +67,7 @@ void build_process_map(int size, int *map, int mode)
   dimNZ = tmgr.getDimNZ();
   dimNT = tmgr.getDimNT();
 
-  if (mode == 1) {
+  if (mode < 3) {
     // most ranks send 1 hop away
     for(int i=0; i<size; i++) {
       tmgr.rankToCoordinates(i, x, y, z, t);
@@ -76,16 +83,19 @@ void build_process_map(int size, int *map, int mode)
 	else
 	  z1 = wrap_z(z + 1);
       }
-
-      // for now this will only work on a 8 x 8 x 16 partition
-      // we do swap of some of the ranks
-      if(z == 0) z1 == 8;
-      if(z == 8) z1 == 0;
-      if(z==1  && t<dimNT/2) z1 == 15;
-      if(z==15 && t>dimNT/2) z1 == 1;
-      if(z==7  && t>dimNT/2) z1 == 9;
-      if(z==9  && t<dimNT/2) z1 == 7;
-      map[i] = tmgr.coordinatesToRank(x, y, z1, t);
+      
+      t1 = t;
+      if(mode == 2) {
+	// for now this will only work on a 8 x 8 x 16 partition
+	// we swap some of the ranks
+	if(z == 0) z1 = 8;
+	if(z == 8) z1 = 0;
+	if(z == 1  && t < dimNT/2)  { z1 = 15; t1 = t+2; }
+	if(z == 15 && t >= dimNT/2) { z1 = 1;  t1 = t-2; }
+	if(z == 7  && t >= dimNT/2) { z1 = 9;  t1 = t-2; }
+	if(z == 9  && t < dimNT/2)  { z1 = 7;  t1 = t+2; }
+      }
+      map[i] = tmgr.coordinatesToRank(x, y, z1, t1);
     }
   } else {
     // send 2 hops away
@@ -106,6 +116,11 @@ void build_process_map(int size, int *map, int mode)
     }
   }
 
+  int hops = 0;
+  for(int i=0; i<size; i++) {
+    hops += tmgr.getHopsBetweenRanks(i, map[i]);
+  }
+  printf("Hops for mode %d = %d\n", mode, hops);
   // dump_map(size, map);
 }
 
@@ -114,10 +129,11 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  MPI_Request mreq;
+  MPI_Status mstat;
 
   double sendTime, recvTime, time = 0.0;
   int msg_size;
-  MPI_Status mstat;
   int i=0, pe, trial, hops;
   char name[30];
 
@@ -149,7 +165,7 @@ int main(int argc, char *argv[]) {
     printf("Torus Dimensions %d %d %d %d hops %d\n", tmgr->getDimNX(), tmgr->getDimNY(), dimNZ, tmgr->getDimNT(), maxHops);
   }
 
-  for (hops=1; hops <= 2; hops++) {
+  for (hops=1; hops <= 3; hops++) {
     sprintf(name, "bgp_mode_%d_%d.dat", numprocs, hops);
     // Rank 0 makes up a routing map.
     if (myrank == 0)
@@ -158,6 +174,10 @@ int main(int argc, char *argv[]) {
     // Broadcast the routing map.
     MPI_Bcast(map, numprocs, MPI_INT, 0, MPI_COMM_WORLD);
 
+#if USE_HPM
+    HPM_Init();
+    HPM_Start("Sending");
+#endif
     for (msg_size=MIN_MSG_SIZE; msg_size<=MAX_MSG_SIZE; msg_size=(msg_size<<1)) {
       for (trial=0; trial<11; trial++) {
 
@@ -167,18 +187,20 @@ int main(int argc, char *argv[]) {
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	if(myrank < pe) {
-	  for(i=0; i<NUM_MSGS; i++)
+	  for(i=0; i<NUM_MSGS; i++) {
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	  for(i=0; i<NUM_MSGS; i++)
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
+	    MPI_Wait(&mreq, &mstat);
+	  }
 
 	  MPI_Barrier(MPI_COMM_WORLD);
 	  if(myrank == 0 && trial > 0) recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
 	} else {
-	  for(i=0; i<NUM_MSGS; i++)
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
-	  for(i=0; i<NUM_MSGS; i++)
+	  for(i=0; i<NUM_MSGS; i++) {
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
+	    MPI_Wait(&mreq, &mstat);
+	  }
 
 	  MPI_Barrier(MPI_COMM_WORLD);
 	}
@@ -194,6 +216,10 @@ int main(int argc, char *argv[]) {
 	time = 0.0;
       }
     }
+#if USE_HPM
+    HPM_Stop("Sending");
+    HPM_Print();
+#endif
   }
  
   if(myrank == 0)
