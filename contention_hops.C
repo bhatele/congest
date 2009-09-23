@@ -119,11 +119,12 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  MPI_Request mreq;
+  MPI_Status mstat;
 
   double sendTime, recvTime, min, avg, max;
   double time[3] = {0.0, 0.0, 0.0};
   int msg_size;
-  MPI_Status mstat;
   int i=0, pe, trial, hops;
   char name[30];
 
@@ -175,42 +176,48 @@ int main(int argc, char *argv[]) {
 	if(myrank < pe) {
 	  // warmup
 	  for(i=0; i<2; i++) {
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
+	    MPI_Wait(&mreq, &mstat);
 	  }
 
 	  sendTime = MPI_Wtime();
-	  for(i=0; i<NUM_MSGS; i++)
+	  for(i=0; i<NUM_MSGS; i++) {
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	  for(i=0; i<NUM_MSGS; i++)
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
+	    MPI_Wait(&mreq, &mstat);
+	  }
 	  recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
       
 	  // cooldown
 	  for(i=0; i<2; i++) {
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
+	    MPI_Wait(&mreq, &mstat);
 	  }
 
 	  MPI_Barrier(MPI_COMM_WORLD);
 	} else {
 	  // warmup
 	  for(i=0; i<2; i++) {
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
+	    MPI_Wait(&mreq, &mstat);
 	  }
 
 	  sendTime = MPI_Wtime();
-	  for(i=0; i<NUM_MSGS; i++)
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
-	  for(i=0; i<NUM_MSGS; i++)
+	  for(i=0; i<NUM_MSGS; i++) {
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
+	    MPI_Wait(&mreq, &mstat);
+	  }
 	  recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
 
 	  // cooldown
 	  for(i=0; i<2; i++) {
-	    MPI_Recv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mstat);
+	    MPI_Irecv(recv_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD, &mreq);
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
+	    MPI_Wait(&mreq, &mstat);
 	  }
 
 	  MPI_Barrier(MPI_COMM_WORLD);
