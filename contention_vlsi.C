@@ -61,27 +61,28 @@ void build_process_map(int size, int *map, int mode)
   TopoManager tmgr;
   int x, y, z, t, z1, t1 = 0;
   int dimNX, dimNY, dimNZ, dimNT;
+  int away = (mode + 1) / 2;
 
   dimNX = tmgr.getDimNX();
   dimNY = tmgr.getDimNY();
   dimNZ = tmgr.getDimNZ();
   dimNT = tmgr.getDimNT();
 
-  if (mode < 3) {
+  if (away % 2 == 1) {
     // most ranks send 1 hop away
     for(int i=0; i<size; i++) {
       tmgr.rankToCoordinates(i, x, y, z, t);
       if (t < dimNT/2) {
 	if (z%2 == 0)
-	  z1 = wrap_z(z + 1);
+	  z1 = wrap_z(z + away);
 	else
-	  z1 = wrap_z(z - 1);
+	  z1 = wrap_z(z - away);
       }
       else {
 	if (z%2 == 0)
-	  z1 = wrap_z(z - 1);
+	  z1 = wrap_z(z - away);
 	else
-	  z1 = wrap_z(z + 1);
+	  z1 = wrap_z(z + away);
       }
       
       t1 = t;
@@ -103,16 +104,28 @@ void build_process_map(int size, int *map, int mode)
       tmgr.rankToCoordinates(i, x, y, z, t);
       if (t < dimNT/2) {
 	if (z%4 < 2)
-	  z1 = z + 2;
+	  z1 = z + away;
 	else
-	  z1 = z - 2;
+	  z1 = z - away;
       } else {
 	if (z%4 < 2)
-	  z1 = wrap_z(z - 2);
+	  z1 = wrap_z(z - away);
 	else
-	  z1 = wrap_z(z + 2);
+	  z1 = wrap_z(z + away);
       }
-      map[i] = tmgr.coordinatesToRank(x, y, z1, t);
+
+      t1 = t;
+      if(mode == 4) {
+	// for now this will only work on a 8 x 8 x 16 partition
+	// we swap some of the ranks
+	if(z == 0) z1 = 8;
+	if(z == 8) z1 = 0;
+	if(z == 2  && t < dimNT/2)  { z1 = 14; t1 = t+2; }
+	if(z == 14 && t >= dimNT/2) { z1 = 2;  t1 = t-2; }
+	if(z == 6  && t >= dimNT/2) { z1 = 10; t1 = t-2; }
+	if(z == 10 && t < dimNT/2)  { z1 = 6;  t1 = t+2; }
+      }
+      map[i] = tmgr.coordinatesToRank(x, y, z1, t1);
     }
   }
 
@@ -165,7 +178,7 @@ int main(int argc, char *argv[]) {
     printf("Torus Dimensions %d %d %d %d hops %d\n", tmgr->getDimNX(), tmgr->getDimNY(), dimNZ, tmgr->getDimNT(), maxHops);
   }
 
-  for (hops=1; hops <= 3; hops++) {
+  for (hops=1; hops <= 5; hops++) {
     sprintf(name, "bgp_mode_%d_%d.dat", numprocs, hops);
     // Rank 0 makes up a routing map.
     if (myrank == 0)
