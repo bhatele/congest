@@ -10,9 +10,14 @@
  *  Date Created: May 17th, 2009
  *  E-mail: bhatele@illinois.edu
  *
+ *  WICON3 Benchmark:
+ *  --------------------------------------------------------------------------
  *  This benchmark tries to captures the intereference between jobs when the
  *  batch scheduler on a supercomputer does not allocate partitions which are
  *  in a nice geometric shape respecting the topology of the machine.
+ *  
+ *  In the secong mode it creates contention on a specific line by adding more
+ *  and more pairs around a given link.
  */
 
 #include <mpi.h>
@@ -211,9 +216,9 @@ int main(int argc, char *argv[]) {
     MPI_Group_rank(new_group, &grank);
     
 #if CREATE_JOBS
-    sprintf(name, "bgp_job_%d_%d.dat", numprocs, hops);
+    sprintf(name, "xt4_job_%d_%d.dat", numprocs, hops);
 #else
-    sprintf(name, "bgp_line_%d_%d.dat", numprocs, hops);
+    sprintf(name, "xt4_line_%d_%d.dat", numprocs, hops);
 #endif
    
     for (msg_size=MIN_MSG_SIZE; msg_size<=MAX_MSG_SIZE; msg_size=(msg_size<<1)) {

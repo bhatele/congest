@@ -10,11 +10,8 @@
  *  Date Created: October 23rd, 2008
  *  E-mail: bhatele@illinois.edu
  *
- *  This benchmark captures the effect of distance on the message
- *  latencies in the presence of contention. Controlled congestion is
- *  introduced by fixing the number of hops each message travels. Message
- *  latencies are plotted for different message sizes as the number of
- *  hops every message travels increases.
+ *  This benchmark compares hop bytes with max dilation and shows that max
+ *  dilation is important too.
  */
 
 #include <mpi.h>
@@ -179,7 +176,7 @@ int main(int argc, char *argv[]) {
   }
 
   for (hops=1; hops <= 5; hops++) {
-    sprintf(name, "bgp_mode_%d_%d.dat", numprocs, hops);
+    sprintf(name, "xt4_mode_%d_%d.dat", numprocs, hops);
     // Rank 0 makes up a routing map.
     if (myrank == 0)
       build_process_map(numprocs, map, hops);

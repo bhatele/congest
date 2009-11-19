@@ -10,6 +10,8 @@
  *  Date Created: May 11th, 2008
  *  E-mail: bhatele@illinois.edu
  *
+ *  WICON Benchmark:
+ *  --------------------------------------------------------------------------
  *  This benchmark captures the effect of distance on the message
  *  latencies in the presence of contention. Every processor sends
  *  a message to some other random processor. The number of messages
@@ -164,7 +166,7 @@ int main(int argc, char *argv[]) {
   int *map = (int *) malloc(sizeof(int) * numprocs);
 
 #if RANDOMNESS    
-  sprintf(name, "bgp_COmode_rnd_%d.dat", numprocs);
+  sprintf(name, "xt4_rnd_%d.dat", numprocs);
 #else
   // Rank 0 makes up a routing map.
   if(myrank == 0) {
@@ -173,7 +175,7 @@ int main(int argc, char *argv[]) {
   // Broadcast the routing map.
   MPI_Bcast(map, numprocs, MPI_INT, 0, MPI_COMM_WORLD);
 
-  sprintf(name, "bgp_COmode_nn_%d.dat", numprocs);
+  sprintf(name, "xt4_nn_%d.dat", numprocs);
 #endif
 
   for(msg_size=MAX_MSG_SIZE; msg_size>=MIN_MSG_SIZE; msg_size=(msg_size>>1)) {

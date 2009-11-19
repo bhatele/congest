@@ -10,6 +10,8 @@
  *  Date Created: October 23rd, 2008
  *  E-mail: bhatele@illinois.edu
  *
+ *  WICON2 Benchmark:
+ *  --------------------------------------------------------------------------
  *  This benchmark captures the effect of distance on the message
  *  latencies in the presence of contention. Controlled congestion is
  *  introduced by fixing the number of hops each message travels. Message
@@ -158,7 +160,7 @@ int main(int argc, char *argv[]) {
 
   for (hops=1; hops <= maxHops; hops++) {
 
-    sprintf(name, "bgp_hops_%d_%d.dat", numprocs, hops);
+    sprintf(name, "xt4_hops_%d_%d.dat", numprocs, hops);
     // Rank 0 makes up a routing map.
     if (myrank == 0)
       build_process_map(numprocs, map, hops);

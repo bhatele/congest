@@ -10,6 +10,8 @@
  *  Date Created: September 24th, 2009
  *  E-mail: bhatele@illinois.edu
  *
+ *  This benchmark creates a background communication first (simple 3D stencil)
+ *  and then we compare 6 max hops versus 9 max hops.
  */
 
 #include <mpi.h>
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]) {
   int hops3N = tmgr.coordinatesToRank(wrap_x(x-1), wrap_y(y-1), wrap_z(z-1), t);
 
   for (hops=1; hops <= 3; hops++) {
-    sprintf(name, "bgp_dilation_%d_%d.dat", numprocs, hops);
+    sprintf(name, "xt4_dilation_%d_%d.dat", numprocs, hops);
 
 #if USE_HPM
     HPM_Init();

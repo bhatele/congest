@@ -12,6 +12,7 @@
  *
  *  This benchmark tries to capture the effect of increasing communication
  *  volume on message latencies for near-neighbor and random neighbor messages.
+ *    -- We are not using this one any more.
  */
 
 #include <mpi.h>
