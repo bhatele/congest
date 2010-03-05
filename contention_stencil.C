@@ -1,10 +1,3 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
 /** \file contention_stencil.C
  *  Author: Abhinav S Bhatele
  *  Date Created: September 24th, 2009
