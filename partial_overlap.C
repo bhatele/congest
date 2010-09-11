@@ -14,8 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-//#include <libhpm.h>
 #include "TopoManager.h"
+#if USE_HPM
+  #include <libhpm.h>
 
 extern "C" {
 void HPM_Init(void);
@@ -26,6 +27,7 @@ void HPM_Print_Flops(void);
 void HPM_Print_Flops_Agg(void);
 void HPM_Flops( char *, double *, double * );
 }
+#endif
 
 // Minimum message size (bytes)
 #define MIN_MSG_SIZE 4
@@ -185,7 +187,9 @@ int main(int argc, char *argv[]) {
   if (myrank == 0) {
     printf("Torus Dimensions %d %d %d %d\n", tmgr->getDimNX(), tmgr->getDimNY(), dimNZ, tmgr->getDimNT());
   }
+#if USE_HPM
     HPM_Init();
+#endif
 #if CREATE_JOBS
   for (hops=0; hops < 2; hops++) {
 #else
@@ -204,7 +208,9 @@ int main(int argc, char *argv[]) {
     if (myrank == 0) {
        printf( " Broadcasted the map \n");
     }
+#if USE_HPM
     HPM_Start(blockname);
+#endif
 #if CREATE_JOBS
     sprintf(name, "xt4_job_%d_%d.dat", numprocs, hops);
 #else
@@ -286,9 +292,13 @@ int main(int argc, char *argv[]) {
 		fclose(locf);
 	}
     free(pmap);
+#if USE_HPM
   HPM_Stop(blockname);
+#endif
   } // end for loop of hops
+#if USE_HPM
   HPM_Print();
+#endif
   if(myrank == 0)
     printf("Program Complete\n");
   MPI_Finalize();
