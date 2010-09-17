@@ -25,7 +25,8 @@
 // Maximum message size (bytes)
 #define MAX_MSG_SIZE (1024 * 1024)
 
-#define NUM_MSGS 10
+#define NUM_MSGS	10
+#define CORES_PER_NODE	16
 
 static unsigned long next = 1;
 
@@ -123,10 +124,10 @@ void build_random_map(int init, int size, int * map)
   }
 #else
   int i, j;
-  for(i=0; i<size; i=i+8) {
-    for(j=0; j<4; j++) {
-      map[i + j] = i + j + 4;
-      map[i + j + 4] = i + j;
+  for(i=0; i<size; i = i + (2*CORES_PER_NODE)) {
+    for(j=0; j<CORES_PER_NODE; j++) {
+      map[i + j] = i + j + CORES_PER_NODE;
+      map[i + j + CORES_PER_NODE] = i + j;
     }
   }
 #endif
