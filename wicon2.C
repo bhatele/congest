@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
 	    MPI_Wait(&mreq, &mstat);
 	  }
-	  recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
+	  recvTime = (MPI_Wtime() - sendTime) / (NUM_MSGS * 2);
       
 	  // cooldown
 	  for(i=0; i<2; i++) {
@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
 	    MPI_Send(send_buf, msg_size, MPI_CHAR, pe, 1, MPI_COMM_WORLD);
 	    MPI_Wait(&mreq, &mstat);
 	  }
-	  recvTime = (MPI_Wtime() - sendTime) / NUM_MSGS;
+	  recvTime = (MPI_Wtime() - sendTime) / (NUM_MSGS * 2);
 
 	  // cooldown
 	  for(i=0; i<2; i++) {
