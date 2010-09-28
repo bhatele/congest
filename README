@@ -14,12 +14,11 @@ topology and contention on the communication time on a supercomputer.
 ------------------------------------------------------------------------------
 COMPILE:
 ------------------------------------------------------------------------------
-  mpicxx -O2 -o lat latency.C
-  mpicxx -O2 -DRANDOMNESS=0 -o nn contention.c
-  mpicxx -O2 -DRANDOMNESS=1 -o rnd contention.c
-  mpicxx -O2 -o hops contention_hops.C
-  mpicxx -O2 -DCREATE_JOBS=0 -o line contention_jobs.C
-  mpicxx -O2 -DCREATE_JOBS=1 -o jobs contention_jobs.C
+To compile, edit the Makefile so that the variables are set for the
+right architecture.
+
+You will also need the TopoMgrAPI for some of the benchmarks in this suite.
+http://charm.cs.uiuc.edu/~bhatele/phd/TopoMgrAPI.tar.gz
 
 ------------------------------------------------------------------------------
 CITATION:

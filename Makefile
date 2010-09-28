@@ -1,8 +1,6 @@
 # ==============================================================================
 # Common Variables
 INC	= ../../TopoMgrAPI
-# ==============================================================================
-# Blue Gene/L
 
 # ==============================================================================
 # Blue Gene/P
@@ -12,20 +10,27 @@ COPTS   = -c -O3 -DCMK_BLUEGENEP=1 -I$(INC)
 LOPTS   =
 
 # ==============================================================================
-# Cray XT3 (BigBen)
-#CC      = cc
-#CXX     = CC
-#COPTS   = -c -O3 -DCMK_CRAYXT -DXT3_TOPOLOGY=1 #-DCRAYNBORTABLE=`pwd`/CrayNeighborTable
-#LOPTS   = 
-
-# ==============================================================================
 # Cray XT4/5 (Jaguar, Kraken)
 #CC      = cc
 #CXX     = CC
 #COPTS   = -c -O3 -DCMK_CRAYXT -DXT5_TOPOLOGY=1
 #LOPTS   = -lrca -lhpm 
 
-all: partial flow
+all: wocon wicon wicon2
+
+wocon: wocon.c
+	$(CC) $(COPTS) -o wocon.o wocon.c
+	$(CC) -o wocon wocon.o
+
+wicon: wicon.c
+	$(CC) $(COPTS) -DRANDOMNESS=0 -o wicon.o wicon.c
+	$(CC) -o wicon-nn wicon.o
+	$(CC) $(COPTS) -DRANDOMNESS=1 -o wicon.o wicon.c
+	$(CC) -o wicon-rnd wicon.o
+
+wicon2: wicon2.C
+	$(CXX) $(COPTS) -o wicon2.o wicon2.C
+	$(CXX) -o wicon2 wicon2.o $(INC)/libtmgr.a $(LOPTS)
 
 bandwidthX: bandwidth.C
 	$(CXX) $(COPTS) -o bandwidth.o bandwidth.C
@@ -44,5 +49,5 @@ flow: flow.C
 	$(CXX) -o flow flow.o $(INC)/libtmgr.a $(LOPTS)
 
 clean:
-	rm -f *.o partial flow
+	rm -f *.o wocon wicon-nn wicon-rnd wicon2 partial flow
 

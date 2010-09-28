@@ -1,15 +1,15 @@
-/** \file contention_hops.C
+/** \file wicon2.C
  *  Author: Abhinav S Bhatele
  *  Date Created: October 23rd, 2008
  *  E-mail: bhatele@illinois.edu
  *
  *  WICON2 Benchmark:
  *  --------------------------------------------------------------------------
- *  This benchmark captures the effect of distance on the message
- *  latencies in the presence of contention. Controlled congestion is
- *  introduced by fixing the number of hops each message travels. Message
- *  latencies are plotted for different message sizes as the number of
- *  hops every message travels increases.
+ *  This benchmark captures the effect of distance on the message latencies in
+ *  the presence of contention. Controlled congestion is introduced by fixing
+ *  the number of hops each message travels. Message latencies are plotted for
+ *  different message sizes as the number of hops every message travels
+ *  increases.
  */
 
 #include <mpi.h>

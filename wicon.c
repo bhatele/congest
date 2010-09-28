@@ -1,16 +1,16 @@
-/** \file contention.c 
+/** \file wicon.c
  *  Author: Abhinav S Bhatele
  *  Date Created: May 11th, 2008
  *  E-mail: bhatele@illinois.edu
  *
  *  WICON Benchmark:
  *  --------------------------------------------------------------------------
- *  This benchmark captures the effect of distance on the message
- *  latencies in the presence of contention. Every processor sends
- *  a message to some other random processor. The number of messages
- *  being sent can be varied and the random processor is changed in
- *  every trial. These latencies for different message sizes are
- *  compared to the latencies for messages sent to the nearest neighbor
+ *  This benchmark captures the effect of distance on the message latencies in
+ *  the presence of contention. Every processor sends a message to some other
+ *  random processor. The number of messages being sent can be varied and the
+ *  random processor is changed in every trial. These latencies for different
+ *  message sizes are compared to the latencies for messages sent to the
+ *  nearest neighbor
  */
 
 #include <mpi.h>

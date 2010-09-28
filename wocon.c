@@ -1,12 +1,13 @@
-/** \file latency.c
+/** \file wocon.c
  *  Author: Abhinav S Bhatele
  *  Date Created: May 11th, 2008
  *  E-mail: bhatele2@uiuc.edu
  *
- *  This benchmark uses one particular processor to send messages
- *  to all other processors in the allocated partition. Message latency
- *  for the ping-pong for each pair is stored as a function of the 
- *  message size.
+ *  WOCON Benchmark:
+ *  --------------------------------------------------------------------------
+ *  This benchmark uses one particular processor to send messages to all other
+ *  processors in the allocated partition. Message latency for the ping-pong
+ *  for each pair is stored as a function of the message size.
  */
 
 #include <mpi.h>

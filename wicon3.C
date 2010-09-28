@@ -1,4 +1,4 @@
-/** \file contention_jobs.C
+/** \file wicon3.C
  *  Author: Abhinav S Bhatele
  *  Date Created: May 17th, 2009
  *  E-mail: bhatele@illinois.edu
