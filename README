@@ -1,27 +1,34 @@
-========================================================================
-			EXPERIMENTS
-========================================================================
+==============================================================================
+                       MPI Contention Benchmark Suite
+==============================================================================
 
-  Author: Gagan
-  Date Created: May 11th, 2010
+  Author: Abhinav S Bhatele
+  Date Created: November 11th, 2008
+  E-mail: bhatele AT illinois.edu
 
-------------------------------------------------------------------------
-1. full_overlap
+------------------------------------------------------------------------------
 
-2. partial_overlap
+The benchmarks in this suite can be used to estimate the impact of network
+topology and contention on the communication time on a supercomputer.
 
-3. flow
-Reads the map from the mapfile. The number of the mapfile is passed as an argument to build_process_map.
+------------------------------------------------------------------------------
+COMPILE:
+------------------------------------------------------------------------------
+  mpicxx -O2 -o lat latency.C
+  mpicxx -O2 -DRANDOMNESS=0 -o nn contention.c
+  mpicxx -O2 -DRANDOMNESS=1 -o rnd contention.c
+  mpicxx -O2 -o hops contention_hops.C
+  mpicxx -O2 -DCREATE_JOBS=0 -o line contention_jobs.C
+  mpicxx -O2 -DCREATE_JOBS=1 -o jobs contention_jobs.C
 
-Format for the map file
+------------------------------------------------------------------------------
+CITATION:
+------------------------------------------------------------------------------
+Any published work which utilizes this API should include the following
+reference:
 
-Sender          Receiver
-x1 y1 z1 ---->  x2 y2 z2
+"Abhinav Bhatele and Laxmikant V. Kale, Quantifying Network Contention on Large
+Parallel Machines, Parallel Processing Letters (Special Issue on Large Scale
+Parallel Processing), Vol. 19, Issue 4, pp. 553-572, 2009"
 
-Compile them using the corresponding option in makefile.
-Right now, each of them has been instrumented with calls for obtaining hpm counters. These will have to be tested on the Cray machines.
-
-The output is bgp_print files from where we extract the bandwidth data.
-
-
-========================================================================
+==============================================================================
