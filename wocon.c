@@ -34,8 +34,8 @@ int main(int argc, char *argv[]) {
   int msg_size, num_msgs;
   int i=0, j=0;
   char name1[30], name2[30];
-  sprintf(name1, "bgp_latency_%d.dat", numprocs);
-  sprintf(name2, "bgp_latMAM_%d.dat", numprocs);
+  sprintf(name1, "xt4_latency_%d.dat", numprocs);
+  sprintf(name2, "xt4_latMAM_%d.dat", numprocs);
 
   char *send_buf = (char *)memalign(64 * 1024, MAX_MSG_SIZE);
   char *recv_buf = (char *)memalign(64 * 1024, MAX_MSG_SIZE);

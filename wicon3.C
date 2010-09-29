@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 #if CREATE_JOBS
     sprintf(name, "xt4_job_%d_%d.dat", numprocs, hops);
 #else
-    sprintf(name, "bgp_line_%d_%d.dat", numprocs, hops);
+    sprintf(name, "xt4_line_%d_%d.dat", numprocs, hops);
 #endif
    
     for (msg_size=MIN_MSG_SIZE; msg_size<=MAX_MSG_SIZE; msg_size=(msg_size<<1)) {
