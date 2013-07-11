@@ -1,5 +1,5 @@
 ==============================================================================
-                       MPI Contention Benchmark Suite
+              Interconnect CONGestion ESTimators (CONGEST) v1.0
 ==============================================================================
 
   Author: Abhinav S Bhatele
@@ -9,10 +9,10 @@
 ------------------------------------------------------------------------------
 
 The benchmarks in this suite can be used to estimate the impact of network
-topology and contention on the communication time on a supercomputer.
+topology and congestion on the communication time on an interconnect.
 
 ------------------------------------------------------------------------------
-COMPILE:
+BUILD:
 ------------------------------------------------------------------------------
 To compile, edit the Makefile so that the variables are set for the
 right architecture.
